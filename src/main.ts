@@ -1,5 +1,5 @@
 import './style.css'
-import { WebGLRenderer, Scene, PerspectiveCamera, OrthographicCamera, ShaderMaterial, PlaneGeometry, Mesh, DoubleSide, Vector4, Color, TextureLoader, NearestFilter, Texture, WebGLRenderTarget, LinearFilter, RGBAFormat} from 'three'
+import { WebGLRenderer, Scene, PerspectiveCamera, OrthographicCamera, ShaderMaterial, PlaneGeometry, Mesh, DoubleSide, Vector2, Vector4, Color, TextureLoader, NearestFilter, Texture, WebGLRenderTarget, LinearFilter, RGBAFormat, Raycaster} from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { gltf_loader } from "./glb_loader"
 import { Debug } from "./Debug"
@@ -17,7 +17,6 @@ let color_index = Math.floor(Math.random() * colors.length)
 let palette : string[] = colors[color_index]; // Array of 5 colors 
 
 let palette_THREE = palette.map((color) => new Color(color))
-console.log(T_monkey_N_url)
 
 export class Sketch {
   private renderer: WebGLRenderer
@@ -40,6 +39,8 @@ export class Sketch {
   private msh_monkey: Mesh
   private loaded_map_monkey_N: Texture
   private render_target_01: WebGLRenderTarget
+  private raycaster: Raycaster
+  private pointer: Vector2
 
   constructor(options: { dom: HTMLElement }) {
     this.scene_render_target_01 = new Scene()
@@ -55,6 +56,9 @@ export class Sketch {
     this.render = this.render.bind(this)
     this.imageAspect = 1
     this.debug = new Debug()
+
+    this.raycaster = new Raycaster()
+    this.pointer = new Vector2()
 
     this.container.appendChild(this.renderer.domElement)
 
@@ -84,11 +88,35 @@ export class Sketch {
     this.addObjects_fianl_render()
     this.resize()
     this.render()
-    this.setupResize()
+    this.setupEvent()
+    this.clickEvent()
+  }
+
+  clickEvent() {
+    window.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      this.pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      this.pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      console.log(this.pointer)
+
+      this.raycaster.setFromCamera( this.pointer, this.camera_fianl_render )
+      const intersects = this.raycaster.intersectObjects( this.scene_fianl_render.children ); 
+      if (intersects.length > 0) {
+        color_index = Math.floor(Math.random() * colors.length)
+        // console.log(color_index);
+  
+        palette = colors[color_index]; // Array of 5 colors
+        palette_THREE = palette.map((color) => new Color(color));
+  
+        // this.mat_render_target_01  u_color: { value: palette },
+        this.mat_render_target_01.uniforms.u_color.value = palette_THREE;
+      }
+    })
   }
 
 
-  setupResize() {
+  setupEvent() {
     window.addEventListener("resize", this.resize.bind(this))
   }
 
